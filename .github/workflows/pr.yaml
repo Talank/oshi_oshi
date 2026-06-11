@@ -2,12 +2,7 @@
 name: Pull Request CI
 
 on:
-  pull_request:
-    paths-ignore:
-      - '**.md'
-      - '**.yml'
-      - '**.yaml'
-
+  workflow_dispatch:
 permissions:
   contents: read
 
@@ -15,7 +10,7 @@ jobs:
   # Static analysis: formatting, style, API restrictions, and javadoc link validity.
   # Runs once on ubuntu/JDK 25 (javadoc for oshi-core-ffm requires JDK 25).
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     name: Lint (Spotless, Checkstyle, ForbiddenAPIs, Javadoc)
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -39,6 +34,13 @@ jobs:
       - name: Javadoc
         run: ./mvnw javadoc:javadoc -DskipTests
 
+    strategy:
+      matrix:
+        os: &id001
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+      fail-fast: false
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -83,7 +85,7 @@ jobs:
   # Codecov under the `freebsd` flag — this is the only PR job that exercises
   # the FreeBSD-specific classes.
   testfreebsd:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     name: Test JDK 25, FreeBSD (+ JNA==FFM)
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -111,8 +113,12 @@ jobs:
           flags: freebsd
 
   # OpenBSD VM, JDK 25. Same pattern as FreeBSD above.
+    strategy:
+      matrix:
+        os: *id001
+      fail-fast: false
   testopenbsd:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     name: Test JDK 25, OpenBSD (+ JNA==FFM)
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -143,8 +149,12 @@ jobs:
   # OpenIndiana (illumos/Solaris) VM, JDK 25. Same pattern as FreeBSD/OpenBSD above.
   # Bumped VM RAM and capped JVM heap so back-to-back module test runs (JNA + FFM)
   # don't exhaust illumos's native-memory pool.
+    strategy:
+      matrix:
+        os: *id001
+      fail-fast: false
   testopenindiana:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     name: Test JDK 25, OpenIndiana (+ JNA==FFM)
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -180,6 +190,10 @@ jobs:
           flags: solaris
 
   # JMH performance benchmarks — separate job to avoid slowing down test+coverage
+    strategy:
+      matrix:
+        os: *id001
+      fail-fast: false
   benchmarks:
     runs-on: ${{ matrix.os }}
     strategy:

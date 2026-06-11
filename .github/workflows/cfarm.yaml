@@ -3,16 +3,6 @@ name: Cfarm CI
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - '**.md'
-      - '**.yml'
-      - '**.yaml'
-
-# Default-deny at the workflow level. Both jobs SSH into cfarm hosts and never
-# touch GITHUB_TOKEN, so no per-job grants are needed.
 permissions: {}
 
 jobs:
@@ -22,96 +12,107 @@ jobs:
   testsolaris_sparc:
     name: Test JDK 17, Solaris SPARC
     concurrency: solaris_cfarm216
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
-    - name: Test in Solaris SPARC
-      uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
-      env:
-        REPO_URL: https://github.com/${{ github.repository }}
-        BRANCH: ${{ github.ref_name }}
-      with:
-        host: cfarm216.cfarm.net
-        username: oshi
-        key: ${{ secrets.GCC_CI_KEY }}
-        port: 22
-        command_timeout: 25m
-        envs: REPO_URL,BRANCH
-        script: |
-          set -e
-          source .profile
-          cd ~/oshi
-          # Fetch + reset to the triggering ref regardless of local state.
-          # FETCH_HEAD avoids touching the cfarm clone's named branches.
-          git fetch "$REPO_URL" "$BRANCH"
-          git reset --hard FETCH_HEAD
-          for i in {1..2}; do ./mvnw clean test -B -Djacoco.skip=true && break || sleep 15; done
+      - name: Test in Solaris SPARC
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          REPO_URL: https://github.com/${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        with:
+          host: cfarm216.cfarm.net
+          username: oshi
+          key: ${{ secrets.GCC_CI_KEY }}
+          port: 22
+          command_timeout: 25m
+          envs: REPO_URL,BRANCH
+          script: |
+            set -e
+            source .profile
+            cd ~/oshi
+            # Fetch + reset to the triggering ref regardless of local state.
+            # FETCH_HEAD avoids touching the cfarm clone's named branches.
+            git fetch "$REPO_URL" "$BRANCH"
+            git reset --hard FETCH_HEAD
+            for i in {1..2}; do ./mvnw clean test -B -Djacoco.skip=true && break || sleep 15; done
 
   # Tests the triggering ref on AIX 7.3: master on push, or the dispatched
   # branch (possibly from a fork) on workflow_dispatch.
   # JNA's library is pre-extracted to ~/.cache/jna so the test JVM loads it
   # directly via System.load(); the JAR-unpack step is the flaky one on OpenJ9.
+    strategy:
+      matrix:
+        os: &id001
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+      fail-fast: false
   testaix:
     name: Test JDK 25, AIX
     concurrency: aix_cfarm119
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
-    - name: Test in AIX
-      uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
-      env:
-        REPO_URL: https://github.com/${{ github.repository }}
-        BRANCH: ${{ github.ref_name }}
-      with:
-        host: cfarm119.cfarm.net
-        username: oshi
-        key: ${{ secrets.GCC_CI_KEY }}
-        port: 22
-        command_timeout: 15m
-        envs: REPO_URL,BRANCH
-        script: |
-          set -e
-          rm -fR ~/javashared*
-          cd ~/git/oshi
-          export JAVA_HOME=~/java/jdk-25.0.3+9
-          export PATH=$PATH:/opt/freeware/bin
-          export MAVEN_OPTS="-Xshareclasses:none"
-          # Fetch + reset to the triggering ref regardless of local state.
-          # FETCH_HEAD avoids touching the cfarm clone's named branches.
-          git fetch "$REPO_URL" "$BRANCH"
-          git reset --hard FETCH_HEAD
-          # mvnw hash_string() overflows AIX ksh arithmetic; use mvn directly
-          MAVEN_VERSION=3.9.15
-          MAVEN_DIR=/home/oshi/software/apache-maven-$MAVEN_VERSION
-          if [ ! -d "$MAVEN_DIR" ]; then
-            mkdir -p /home/oshi/software
-            wget https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-bin.tar.gz -nv -O /tmp/maven.tar.gz
-            gunzip -f /tmp/maven.tar.gz
-            cd /home/oshi/software && tar xf /tmp/maven.tar && rm /tmp/maven.tar
+      - name: Test in AIX
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          REPO_URL: https://github.com/${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        with:
+          host: cfarm119.cfarm.net
+          username: oshi
+          key: ${{ secrets.GCC_CI_KEY }}
+          port: 22
+          command_timeout: 15m
+          envs: REPO_URL,BRANCH
+          script: |
+            set -e
+            rm -fR ~/javashared*
             cd ~/git/oshi
-          fi
-          export PATH=$MAVEN_DIR/bin:$PATH
-          # Pre-extract libjnidispatch.a to a stable path so the test JVM can
-          # System.load() it directly. JNA's default behavior is to unpack the
-          # library from the jar with a fresh per-PID filename on every JVM
-          # start, which is what flakes on OpenJ9. Use 'jar' (always shipped
-          # with the JDK) to avoid depending on AIX-side 'unzip' or 'sort -V'.
-          JNA_CACHE=/home/oshi/.cache/jna
-          JNA_LIB=$JNA_CACHE/libjnidispatch.a
-          mkdir -p "$JNA_CACHE"
-          JNA_VERSION=$(mvn -q -N help:evaluate -Dexpression=jna.version -DforceStdout 2>/dev/null)
-          JNA_JAR=$HOME/.m2/repository/net/java/dev/jna/jna/$JNA_VERSION/jna-$JNA_VERSION.jar
-          if [ ! -f "$JNA_JAR" ]; then
-            mvn -q -N dependency:get -Dartifact=net.java.dev.jna:jna:$JNA_VERSION -Dmaven.gitcommitid.skip=true
-          fi
-          if [ ! -f "$JNA_LIB" ] || [ "$JNA_JAR" -nt "$JNA_LIB" ]; then
-            rm -rf /tmp/jna-extract && mkdir -p /tmp/jna-extract
-            (cd /tmp/jna-extract && jar xf "$JNA_JAR" com/sun/jna/aix-ppc64/libjnidispatch.a)
-            mv /tmp/jna-extract/com/sun/jna/aix-ppc64/libjnidispatch.a "$JNA_LIB"
-            rm -rf /tmp/jna-extract
-            # Expose under both names in case the JVM's mapLibraryName picks .so
-            ln -sf libjnidispatch.a "$JNA_CACHE/libjnidispatch.so"
-          fi
-          # jna.boot.library.path tells JNA to System.load() the pre-extracted
-          # file first; we deliberately do NOT set jna.nounpack so JNA can still
-          # fall back to JAR extraction if the boot-path load ever fails.
-          export _JAVA_OPTIONS="-Djna.boot.library.path=$JNA_CACHE"
-          mvn clean test -B -Djacoco.skip=true || { sleep 15; mvn clean test -B -Djacoco.skip=true; }
+            export JAVA_HOME=~/java/jdk-25.0.3+9
+            export PATH=$PATH:/opt/freeware/bin
+            export MAVEN_OPTS="-Xshareclasses:none"
+            # Fetch + reset to the triggering ref regardless of local state.
+            # FETCH_HEAD avoids touching the cfarm clone's named branches.
+            git fetch "$REPO_URL" "$BRANCH"
+            git reset --hard FETCH_HEAD
+            # mvnw hash_string() overflows AIX ksh arithmetic; use mvn directly
+            MAVEN_VERSION=3.9.15
+            MAVEN_DIR=/home/oshi/software/apache-maven-$MAVEN_VERSION
+            if [ ! -d "$MAVEN_DIR" ]; then
+              mkdir -p /home/oshi/software
+              wget https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-bin.tar.gz -nv -O /tmp/maven.tar.gz
+              gunzip -f /tmp/maven.tar.gz
+              cd /home/oshi/software && tar xf /tmp/maven.tar && rm /tmp/maven.tar
+              cd ~/git/oshi
+            fi
+            export PATH=$MAVEN_DIR/bin:$PATH
+            # Pre-extract libjnidispatch.a to a stable path so the test JVM can
+            # System.load() it directly. JNA's default behavior is to unpack the
+            # library from the jar with a fresh per-PID filename on every JVM
+            # start, which is what flakes on OpenJ9. Use 'jar' (always shipped
+            # with the JDK) to avoid depending on AIX-side 'unzip' or 'sort -V'.
+            JNA_CACHE=/home/oshi/.cache/jna
+            JNA_LIB=$JNA_CACHE/libjnidispatch.a
+            mkdir -p "$JNA_CACHE"
+            JNA_VERSION=$(mvn -q -N help:evaluate -Dexpression=jna.version -DforceStdout 2>/dev/null)
+            JNA_JAR=$HOME/.m2/repository/net/java/dev/jna/jna/$JNA_VERSION/jna-$JNA_VERSION.jar
+            if [ ! -f "$JNA_JAR" ]; then
+              mvn -q -N dependency:get -Dartifact=net.java.dev.jna:jna:$JNA_VERSION -Dmaven.gitcommitid.skip=true
+            fi
+            if [ ! -f "$JNA_LIB" ] || [ "$JNA_JAR" -nt "$JNA_LIB" ]; then
+              rm -rf /tmp/jna-extract && mkdir -p /tmp/jna-extract
+              (cd /tmp/jna-extract && jar xf "$JNA_JAR" com/sun/jna/aix-ppc64/libjnidispatch.a)
+              mv /tmp/jna-extract/com/sun/jna/aix-ppc64/libjnidispatch.a "$JNA_LIB"
+              rm -rf /tmp/jna-extract
+              # Expose under both names in case the JVM's mapLibraryName picks .so
+              ln -sf libjnidispatch.a "$JNA_CACHE/libjnidispatch.so"
+            fi
+            # jna.boot.library.path tells JNA to System.load() the pre-extracted
+            # file first; we deliberately do NOT set jna.nounpack so JNA can still
+            # fall back to JAR extraction if the boot-path load ever fails.
+            export _JAVA_OPTIONS="-Djna.boot.library.path=$JNA_CACHE"
+            mvn clean test -B -Djacoco.skip=true || { sleep 15; mvn clean test -B -Djacoco.skip=true; }
+    strategy:
+      matrix:
+        os: *id001
+      fail-fast: false
