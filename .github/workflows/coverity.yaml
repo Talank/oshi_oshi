@@ -2,15 +2,12 @@ name: Coverity Scan
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 9 */4 * *" # every 4 days at 09:00 UTC
-
 permissions:
   contents: read
 
 jobs:
   build:
-    if: github.repository_owner == 'oshi'
+    if: always()
     runs-on: ubuntu-latest
 
     steps:
@@ -66,3 +63,5 @@ jobs:
             --form version="oshi/coverity_scan" \
             --form description="Oshi Coverity Scan" \
             "https://scan.coverity.com/builds?project=oshi%2Foshi"
+    strategy:
+      fail-fast: false

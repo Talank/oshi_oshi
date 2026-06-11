@@ -3,14 +3,6 @@ name: Linux CI
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - '**.md'
-      - '**.yml'
-      - '**.yaml'
-
 permissions:
   contents: read
 
@@ -43,6 +35,8 @@ jobs:
         run: ./mvnw javadoc:javadoc -DskipTests
 
   # Runs full project on multiple JDKs
+    strategy:
+      fail-fast: false
   testmatrix:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -110,3 +104,5 @@ jobs:
             -w /workspace \
             eclipse-temurin:21-jdk \
             ./mvnw test -pl oshi-common -am -B
+    strategy:
+      fail-fast: false

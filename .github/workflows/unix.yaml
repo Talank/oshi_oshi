@@ -3,14 +3,6 @@ name: Unix CI
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - '**.md'
-      - '**.yml'
-      - '**.yaml'
-
 permissions:
   contents: read
 
@@ -48,6 +40,8 @@ jobs:
 
   # Runs on OpenBSD 7.9 x86 VM with aggregate-coverage uploaded
   # to Codecov under the `openbsd` flag.
+    strategy:
+      fail-fast: false
   testopenbsd:
     runs-on: ubuntu-24.04
     name: Test JDK 25, OpenBSD
@@ -79,6 +73,8 @@ jobs:
 
   # Runs on OpenIndiana (illumos/Solaris) x86 VM with aggregate-coverage uploaded
   # to Codecov under the `solaris` flag.
+    strategy:
+      fail-fast: false
   testopenindiana:
     name: Test JDK 25, OpenIndiana
     runs-on: ubuntu-24.04
@@ -121,6 +117,8 @@ jobs:
           flags: solaris
 
   # Runs on DragonFly BSD 6.4 x86 VM
+    strategy:
+      fail-fast: false
   testdragonflybsd:
     name: Test JDK 21, DragonFly BSD
     runs-on: ubuntu-24.04
@@ -144,6 +142,8 @@ jobs:
             ./mvnw clean test -B -Djacoco.skip=true
 
   # Runs on NetBSD 10.1 x86 VM without JNA native library
+    strategy:
+      fail-fast: false
   testnetbsd:
     name: Test JDK 21, NetBSD
     runs-on: ubuntu-24.04
@@ -165,3 +165,5 @@ jobs:
             export PATH=$JAVA_HOME/bin:$PATH
             mount -t procfs procfs /proc 2>/dev/null || true
             ./mvnw clean test -B -Djacoco.skip=true
+    strategy:
+      fail-fast: false

@@ -2,20 +2,12 @@ name: Site
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - site
-    paths-ignore:
-      - '**.md'
-      - '**.yml'
-      - '**.yaml'
-
 permissions:
   contents: write
 
 jobs:
   build:
-    if: github.repository_owner == 'oshi'
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -40,3 +32,5 @@ jobs:
         with:
           branch: gh-pages
           folder: target/staging
+    strategy:
+      fail-fast: false

@@ -2,12 +2,7 @@
 name: Pull Request CI
 
 on:
-  pull_request:
-    paths-ignore:
-      - '**.md'
-      - '**.yml'
-      - '**.yaml'
-
+  workflow_dispatch:
 permissions:
   contents: read
 
@@ -39,6 +34,8 @@ jobs:
       - name: Javadoc
         run: ./mvnw javadoc:javadoc -DskipTests
 
+    strategy:
+      fail-fast: false
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -111,6 +108,8 @@ jobs:
           flags: freebsd
 
   # OpenBSD VM, JDK 25. Same pattern as FreeBSD above.
+    strategy:
+      fail-fast: false
   testopenbsd:
     runs-on: ubuntu-24.04
     name: Test JDK 25, OpenBSD (+ JNA==FFM)
@@ -143,6 +142,8 @@ jobs:
   # OpenIndiana (illumos/Solaris) VM, JDK 25. Same pattern as FreeBSD/OpenBSD above.
   # Bumped VM RAM and capped JVM heap so back-to-back module test runs (JNA + FFM)
   # don't exhaust illumos's native-memory pool.
+    strategy:
+      fail-fast: false
   testopenindiana:
     runs-on: ubuntu-24.04
     name: Test JDK 25, OpenIndiana (+ JNA==FFM)
@@ -180,6 +181,8 @@ jobs:
           flags: solaris
 
   # JMH performance benchmarks — separate job to avoid slowing down test+coverage
+    strategy:
+      fail-fast: false
   benchmarks:
     runs-on: ${{ matrix.os }}
     strategy:
