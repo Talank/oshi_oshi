@@ -12,10 +12,10 @@
 <a class="jxr_linenumber" name="L4" href="#L4">4</a>   <em class="jxr_comment"> */</em>
 <a class="jxr_linenumber" name="L5" href="#L5">5</a>   <strong class="jxr_keyword">package</strong> oshi.software.os.unix.openbsd;
 <a class="jxr_linenumber" name="L6" href="#L6">6</a>   
-<a class="jxr_linenumber" name="L7" href="#L7">7</a>   <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.ffm.unix.openbsd.OpenBsdLibcFunctions.CTL_KERN;
-<a class="jxr_linenumber" name="L8" href="#L8">8</a>   <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.ffm.unix.openbsd.OpenBsdLibcFunctions.KERN_OSRELEASE;
-<a class="jxr_linenumber" name="L9" href="#L9">9</a>   <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.ffm.unix.openbsd.OpenBsdLibcFunctions.KERN_OSTYPE;
-<a class="jxr_linenumber" name="L10" href="#L10">10</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.ffm.unix.openbsd.OpenBsdLibcFunctions.KERN_VERSION;
+<a class="jxr_linenumber" name="L7" href="#L7">7</a>   <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.ffm.platform.unix.openbsd.OpenBsdLibcFunctions.CTL_KERN;
+<a class="jxr_linenumber" name="L8" href="#L8">8</a>   <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.ffm.platform.unix.openbsd.OpenBsdLibcFunctions.KERN_OSRELEASE;
+<a class="jxr_linenumber" name="L9" href="#L9">9</a>   <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.ffm.platform.unix.openbsd.OpenBsdLibcFunctions.KERN_OSTYPE;
+<a class="jxr_linenumber" name="L10" href="#L10">10</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.ffm.platform.unix.openbsd.OpenBsdLibcFunctions.KERN_VERSION;
 <a class="jxr_linenumber" name="L11" href="#L11">11</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.software.os.OSService.State.RUNNING;
 <a class="jxr_linenumber" name="L12" href="#L12">12</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> oshi.software.os.OSService.State.STOPPED;
 <a class="jxr_linenumber" name="L13" href="#L13">13</a>  
@@ -36,7 +36,7 @@
 <a class="jxr_linenumber" name="L28" href="#L28">28</a>  
 <a class="jxr_linenumber" name="L29" href="#L29">29</a>  <strong class="jxr_keyword">import</strong> oshi.annotation.concurrent.ThreadSafe;
 <a class="jxr_linenumber" name="L30" href="#L30">30</a>  <strong class="jxr_keyword">import</strong> oshi.ffm.ForeignFunctions;
-<a class="jxr_linenumber" name="L31" href="#L31">31</a>  <strong class="jxr_keyword">import</strong> oshi.ffm.unix.openbsd.OpenBsdLibcFunctions;
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>  <strong class="jxr_keyword">import</strong> oshi.ffm.platform.unix.openbsd.OpenBsdLibcFunctions;
 <a class="jxr_linenumber" name="L32" href="#L32">32</a>  <strong class="jxr_keyword">import</strong> oshi.ffm.util.platform.unix.openbsd.OpenBsdSysctlUtilFFM;
 <a class="jxr_linenumber" name="L33" href="#L33">33</a>  <strong class="jxr_keyword">import</strong> oshi.software.common.AbstractOperatingSystem;
 <a class="jxr_linenumber" name="L34" href="#L34">34</a>  <strong class="jxr_keyword">import</strong> oshi.software.common.os.unix.openbsd.OpenBsdInternetProtocolStats;
@@ -114,14 +114,14 @@
 <a class="jxr_linenumber" name="L106" href="#L106">106</a>     <strong class="jxr_keyword">public</strong> List&lt;OSProcess&gt; queryChildProcesses(<strong class="jxr_keyword">int</strong> parentPid) {
 <a class="jxr_linenumber" name="L107" href="#L107">107</a>         List&lt;OSProcess&gt; allProcs = queryAllProcesses();
 <a class="jxr_linenumber" name="L108" href="#L108">108</a>         Set&lt;Integer&gt; descendantPids = getChildrenOrDescendants(allProcs, parentPid, false);
-<a class="jxr_linenumber" name="L109" href="#L109">109</a>         <strong class="jxr_keyword">return</strong> allProcs.stream().filter(p -&gt; descendantPids.contains(p.getProcessID())).collect(Collectors.toList());
+<a class="jxr_linenumber" name="L109" href="#L109">109</a>         <strong class="jxr_keyword">return</strong> allProcs.stream().filter(p -&gt; descendantPids.contains(p.getProcessID())).toList();
 <a class="jxr_linenumber" name="L110" href="#L110">110</a>     }
 <a class="jxr_linenumber" name="L111" href="#L111">111</a> 
 <a class="jxr_linenumber" name="L112" href="#L112">112</a>     @Override
 <a class="jxr_linenumber" name="L113" href="#L113">113</a>     <strong class="jxr_keyword">public</strong> List&lt;OSProcess&gt; queryDescendantProcesses(<strong class="jxr_keyword">int</strong> parentPid) {
 <a class="jxr_linenumber" name="L114" href="#L114">114</a>         List&lt;OSProcess&gt; allProcs = queryAllProcesses();
 <a class="jxr_linenumber" name="L115" href="#L115">115</a>         Set&lt;Integer&gt; descendantPids = getChildrenOrDescendants(allProcs, parentPid, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L116" href="#L116">116</a>         <strong class="jxr_keyword">return</strong> allProcs.stream().filter(p -&gt; descendantPids.contains(p.getProcessID())).collect(Collectors.toList());
+<a class="jxr_linenumber" name="L116" href="#L116">116</a>         <strong class="jxr_keyword">return</strong> allProcs.stream().filter(p -&gt; descendantPids.contains(p.getProcessID())).toList();
 <a class="jxr_linenumber" name="L117" href="#L117">117</a>     }
 <a class="jxr_linenumber" name="L118" href="#L118">118</a> 
 <a class="jxr_linenumber" name="L119" href="#L119">119</a>     @Override
