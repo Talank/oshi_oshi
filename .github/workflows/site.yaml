@@ -23,7 +23,7 @@ jobs:
           path: ~/.m2/repository/org/owasp/dependency-check-data
           key: nvd-db
       - name: Build site
-        run: ./mvnw site site:stage -Djacoco.skip=true -DskipTests -B --settings ./.mvn/settings.xml
+        run: mvn site site:stage -Djacoco.skip=true -DskipTests -B --settings ./.mvn/settings.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
