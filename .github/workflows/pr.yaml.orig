@@ -84,7 +84,7 @@ jobs:
   # Codecov under the `freebsd` flag — this is the only PR job that exercises
   # the FreeBSD-specific classes.
   testfreebsd:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     name: Test JDK 25, FreeBSD (+ JNA==FFM)
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -112,8 +112,12 @@ jobs:
           flags: freebsd
 
   # OpenBSD VM, JDK 25. Same pattern as FreeBSD above.
+    strategy:
+      matrix:
+        os: *id001
+      fail-fast: false
   testopenbsd:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     name: Test JDK 25, OpenBSD (+ JNA==FFM)
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -144,8 +148,12 @@ jobs:
   # OpenIndiana (illumos/Solaris) VM, JDK 25. Same pattern as FreeBSD/OpenBSD above.
   # Bumped VM RAM and capped JVM heap so back-to-back module test runs (JNA + FFM)
   # don't exhaust illumos's native-memory pool.
+    strategy:
+      matrix:
+        os: *id001
+      fail-fast: false
   testopenindiana:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     name: Test JDK 25, OpenIndiana (+ JNA==FFM)
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
